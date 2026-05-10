@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="preconnect" href="https://www.gstatic.com"/>
+<link rel="dns-prefetch" href="https://www.gstatic.com"/>
+<link rel="preconnect" href="https://firestore.googleapis.com"/>
+<link rel="dns-prefetch" href="https://firestore.googleapis.com"/>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>ZenithCrypto — NFT Gallery</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet"/>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--bg:#04060e;--s1:#080d18;--s2:#0c1220;--s3:#111929;--a:#4f8ef7;--gold:#e8b84b;--gold2:#ffd166;--green:#0ecb81;--red:#f6465d;--purple:#7c5df7;--t1:#eaecf0;--t2:#6c7a96;--t3:#2d3a55;--font:'Inter',sans-serif;--fhd:'Orbitron',monospace;--fmono:'JetBrains Mono',monospace}
+html{height:100%;overflow:hidden}
+body{height:100%;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;background:var(--bg);color:var(--t1);font-family:var(--font);margin:0}
+::-webkit-scrollbar{width:2px}::-webkit-scrollbar-thumb{background:rgba(79,142,247,.3);border-radius:2px}
+
+/* ANIMS */
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes glowPulse{0%,100%{box-shadow:0 0 20px rgba(79,142,247,.3)}50%{box-shadow:0 0 40px rgba(79,142,247,.6),0 0 80px rgba(79,142,247,.15)}}
+@keyframes rarityShine{0%{background-position:200% 50%}100%{background-position:-200% 50%}}
+@keyframes popIn{0%{transform:scale(.7);opacity:0}60%{transform:scale(1.05)}100%{transform:scale(1);opacity:1}}
+
+/* TOPBAR */
+#topbar{position:sticky;top:0;z-index:1000;height:54px;background:rgba(4,6,14,.97);border-bottom:1px solid rgba(79,142,247,.12);display:flex;align-items:center;padding:0 14px;gap:8px;backdrop-filter:blur(24px)}
+.tb-brand{font-family:var(--fhd);font-size:.72rem;font-weight:900;background:linear-gradient(135deg,#fff,#a8c4ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:1.5px}
+.tb-sp{flex:1}
+.tb-xp-wrap{width:60px;height:4px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
+#xpf{height:100%;background:linear-gradient(90deg,var(--a),var(--purple));border-radius:3px;width:0%;transition:width .5s}
+#hbal{font-family:var(--fmono);font-size:.9rem;font-weight:700;background:linear-gradient(135deg,#e8b84b,#ffd166);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+#hlv{background:linear-gradient(135deg,var(--a),var(--purple));color:#fff;font-family:var(--fhd);font-size:.4rem;font-weight:900;padding:3px 8px;border-radius:20px}
+
+/* TICKER */
+#ticker-wrap{position:sticky;top:54px;z-index:999;height:26px;background:rgba(4,6,14,.98);border-bottom:1px solid rgba(255,255,255,.05);overflow:hidden;display:flex;align-items:center}
+#ticker{display:flex;gap:18px;animation:tkscroll 30s linear infinite;white-space:nowrap;padding-left:12px}
+@keyframes tkscroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.ti{display:inline-flex;gap:4px;align-items:center;font-size:.5rem;padding:0 10px;border-right:1px solid rgba(255,255,255,.05)}
+.ti-s{font-family:var(--fmono);color:var(--t2);font-weight:700}
+.up{color:var(--green)}.dn{color:var(--red)}
+
+/* PAGE HEADER */
+.page-header{background:radial-gradient(ellipse 100% 60% at 50% -10%,rgba(124,93,247,.18),transparent 60%),var(--s1);padding:16px;border-bottom:1px solid rgba(255,255,255,.05);position:relative;overflow:hidden}
+.page-header::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%237c5df7' fill-opacity='0.03'%3E%3Cpath d='M20 20l-5-8.66h10z'/%3E%3C/g%3E%3C/svg%3E");pointer-events:none}
+.ph-title{font-family:var(--fhd);font-size:.8rem;font-weight:900;background:linear-gradient(135deg,#fff,#c8d8ff,#7c5df7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:2px;margin-bottom:4px}
+.ph-sub{font-family:var(--fhd);font-size:.38rem;color:var(--t3);letter-spacing:1px}
+.ph-stats{display:flex;gap:16px;margin-top:10px}
+.ph-stat{text-align:center}
+.ph-stat-v{font-family:var(--fmono);font-size:.7rem;font-weight:700;color:var(--t1)}
+.ph-stat-l{font-family:var(--fhd);font-size:.32rem;color:var(--t3);letter-spacing:.5px;margin-top:2px}
+
+/* TABS */
+.nft-tabs{position:sticky;top:80px;z-index:990;display:flex;background:var(--s1);border-bottom:1px solid rgba(255,255,255,.05)}
+.nft-tab{flex:1;padding:11px 4px;text-align:center;font-family:var(--fhd);font-size:.44rem;font-weight:700;color:var(--t3);cursor:pointer;border-bottom:2px solid transparent;transition:.15s;letter-spacing:.5px}
+.nft-tab.active{color:var(--purple);border-bottom-color:var(--purple)}
+
+/* FILTER */
+.filter-row{display:flex;gap:6px;padding:10px 14px;overflow-x:auto;scrollbar-width:none;background:var(--s1);border-bottom:1px solid rgba(255,255,255,.04)}
+.filter-row::-webkit-scrollbar{display:none}
+.fp{flex-shrink:0;padding:5px 12px;border-radius:20px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:var(--t2);font-family:var(--fhd);font-size:.38rem;cursor:pointer;transition:.12s}
+.fp.on{border-color:var(--purple);background:rgba(124,93,247,.15);color:var(--purple)}
+
+/* NFT GRID */
+.nft-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px}
+
+/* NFT CARD */
+.nft-card{background:var(--s1);border:1px solid rgba(255,255,255,.07);border-radius:16px;overflow:hidden;cursor:pointer;transition:all .2s;animation:fadeUp .3s ease both;position:relative}
+.nft-card:active{transform:scale(.96)}
+.nft-card.owned{border-color:rgba(124,93,247,.4);box-shadow:0 0 20px rgba(124,93,247,.15)}
+.nft-card.locked{opacity:.55}
+.nft-card.locked .nft-art{filter:grayscale(.8)}
+
+/* Rarity borders */
+.nft-card.common{border-color:rgba(108,122,150,.3)}
+.nft-card.uncommon{border-color:rgba(0,230,118,.3);box-shadow:0 0 12px rgba(0,230,118,.06)}
+.nft-card.rare{border-color:rgba(0,212,255,.3);box-shadow:0 0 12px rgba(0,212,255,.08)}
+.nft-card.epic{border-color:rgba(196,113,245,.4);box-shadow:0 0 16px rgba(196,113,245,.12)}
+.nft-card.legendary{border-color:rgba(240,185,11,.4);box-shadow:0 0 20px rgba(240,185,11,.15)}
+.nft-card.mythic{border-color:rgba(255,71,87,.5);box-shadow:0 0 24px rgba(255,71,87,.2);animation:glowPulse 2s infinite}
+
+/* ART */
+.nft-art{height:130px;display:flex;align-items:center;justify-content:center;font-size:3rem;position:relative;overflow:hidden}
+.nft-art::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 50%,rgba(0,0,0,.6));pointer-events:none}
+.nft-art .rarity-label{position:absolute;top:8px;right:8px;font-family:var(--fhd);font-size:.34rem;font-weight:900;padding:2px 8px;border-radius:20px;letter-spacing:.5px;z-index:2}
+.nft-art .lock-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(4,6,14,.75);z-index:3;gap:4px}
+.lock-ico{font-size:1.6rem}
+.lock-lbl{font-family:var(--fhd);font-size:.38rem;color:var(--gold);letter-spacing:1px}
+.nft-emoji{z-index:1;animation:float 3s ease-in-out infinite;display:block}
+
+/* NFT INFO */
+.nft-info{padding:10px}
+.nft-name{font-family:var(--fhd);font-size:.56rem;font-weight:700;color:var(--t1);margin-bottom:3px}
+.nft-rarity{font-family:var(--fhd);font-size:.36rem;font-weight:700;margin-bottom:5px}
+.nft-price-row{display:flex;align-items:center;justify-content:space-between}
+.nft-price{font-family:var(--fmono);font-size:.6rem;font-weight:700;color:var(--gold)}
+.nft-owned-badge{font-family:var(--fhd);font-size:.34rem;background:rgba(124,93,247,.15);color:var(--purple);border:1px solid rgba(124,93,247,.3);padding:2px 7px;border-radius:12px}
+.nft-bonus{font-family:var(--fhd);font-size:.34rem;color:var(--t3);margin-top:4px;line-height:1.5}
+
+/* BUY BUTTON */
+.nft-buy-btn{width:100%;margin-top:8px;padding:9px;border-radius:9px;border:none;cursor:pointer;font-family:var(--fhd);font-size:.48rem;font-weight:700;letter-spacing:.5px;transition:.15s}
+.nft-buy-btn.can{background:linear-gradient(135deg,var(--purple),var(--a));color:#fff;box-shadow:0 3px 14px rgba(124,93,247,.4)}
+.nft-buy-btn.owned{background:rgba(14,203,129,.12);color:var(--green);border:1px solid rgba(14,203,129,.3)}
+.nft-buy-btn.locked-btn{background:rgba(255,255,255,.05);color:var(--t3)}
+.nft-buy-btn.cant{background:rgba(255,255,255,.05);color:var(--t3)}
+.nft-buy-btn:active{transform:scale(.96)}
+
+/* DETAIL MODAL */
+.nft-modal{position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.8);backdrop-filter:blur(8px);display:none;align-items:flex-end;justify-content:center}
+.nft-modal.open{display:flex;animation:fadeUp .2s ease}
+.nft-modal-box{width:100%;max-width:480px;background:var(--s1);border-radius:20px 20px 0 0;border-top:1px solid rgba(255,255,255,.1);padding:20px;max-height:85vh;overflow-y:auto}
+.modal-handle{width:40px;height:3px;background:rgba(255,255,255,.12);border-radius:2px;margin:0 auto 16px}
+.modal-art{height:180px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:5rem;margin-bottom:14px;position:relative;overflow:hidden}
+.modal-art::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.06),transparent);pointer-events:none}
+.modal-title{font-family:var(--fhd);font-size:.8rem;font-weight:900;color:var(--t1);margin-bottom:4px}
+.modal-rarity{font-family:var(--fhd);font-size:.44rem;margin-bottom:12px}
+.modal-desc{font-size:.62rem;color:var(--t2);line-height:1.7;margin-bottom:14px}
+.modal-perks{background:var(--s2);border-radius:10px;padding:12px;margin-bottom:14px}
+.modal-perk-title{font-family:var(--fhd);font-size:.44rem;color:var(--t2);letter-spacing:1px;margin-bottom:8px}
+.perk-item{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:.58rem}
+.perk-icon{font-size:.8rem;flex-shrink:0}
+.modal-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.modal-stat{background:var(--s2);border-radius:8px;padding:9px 10px;text-align:center}
+.modal-stat-l{font-family:var(--fhd);font-size:.34rem;color:var(--t3);margin-bottom:3px}
+.modal-stat-v{font-family:var(--fmono);font-size:.58rem;font-weight:700}
+.modal-buy-btn{width:100%;padding:14px;border-radius:12px;border:none;cursor:pointer;font-family:var(--fhd);font-size:.64rem;font-weight:900;letter-spacing:1.5px;transition:.15s;position:relative;overflow:hidden}
+.modal-buy-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.15),transparent);pointer-events:none;border-radius:inherit}
+.modal-buy-btn:active{transform:scale(.97)}
+.modal-close{position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.08);border:none;color:var(--t2);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+/* MY NFTS */
+.my-nft-empty{text-align:center;padding:50px 16px}
+.my-nft-empty-icon{font-size:3rem;margin-bottom:12px;animation:float 3s infinite}
+
+/* TOAST */
+#toast{display:none;position:fixed;top:62px;left:50%;transform:translateX(-50%);z-index:9999;background:var(--s1);border-radius:10px;padding:10px 16px;align-items:center;gap:8px;box-shadow:0 6px 28px rgba(0,0,0,.65);border-left:3px solid var(--a);max-width:92vw}
+#toast-msg{font-family:var(--fhd);font-size:.6rem;font-weight:700}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <div onclick="ZCS.go('home')" style="cursor:pointer;display:flex;align-items:center;gap:8px">
+    <svg width="30" height="30" viewBox="0 0 140 140" fill="none"><defs><linearGradient id="tbg" x1="0" y1="0" x2="140" y2="140" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#5b9bff"/><stop offset="50%" stop-color="#9b6dff"/><stop offset="100%" stop-color="#f5c842"/></linearGradient></defs><polygon points="70,8 118,35 118,105 70,132 22,105 22,35" fill="rgba(91,155,255,0.1)" stroke="url(#tbg)" stroke-width="2"/><path d="M40,43 L100,43 L100,55 L64,85 L100,85 L100,97 L40,97 L40,85 L76,55 L40,55 Z" fill="url(#tbg)"/></svg>
+    <span class="tb-brand">‹ NFT</span>
+  </div>
+  <div class="tb-sp"></div>
+  <div class="tb-xp-wrap"><div id="xpf"></div></div>
+  <span id="hbal">$0.00</span>
+  <span id="hlv">LV1</span>
+</div>
+
+<div id="ticker-wrap"><div id="ticker">
+  <span class="ti"><span class="ti-s">BTC</span><span class="up" id="tk-BTC">--</span></span>
+  <span class="ti"><span class="ti-s">ETH</span><span class="up" id="tk-ETH">--</span></span>
+  <span class="ti"><span class="ti-s">SOL</span><span class="up" id="tk-SOL">--</span></span>
+  <span class="ti"><span class="ti-s">BNB</span><span class="up" id="tk-BNB">--</span></span>
+  <span class="ti"><span class="ti-s">BTC</span><span class="up">--</span></span>
+  <span class="ti"><span class="ti-s">ETH</span><span class="up">--</span></span>
+</div></div>
+
+<!-- PAGE HEADER -->
+<div class="page-header">
+  <div class="ph-title">✦ NFT GALLERY</div>
+  <div class="ph-sub">BUY ONCE · OWN FOREVER · UNLOCK PERKS</div>
+  <div class="ph-stats">
+    <div class="ph-stat"><div class="ph-stat-v" id="ph-owned">0</div><div class="ph-stat-l">OWNED</div></div>
+    <div class="ph-stat"><div class="ph-stat-v" id="ph-total">12</div><div class="ph-stat-l">TOTAL</div></div>
+    <div class="ph-stat"><div class="ph-stat-v" id="ph-value" style="color:var(--gold)">$0</div><div class="ph-stat-l">PORTFOLIO</div></div>
+    <div class="ph-stat"><div class="ph-stat-v" id="ph-lv" style="color:var(--green)">LV1</div><div class="ph-stat-l">YOUR LEVEL</div></div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="nft-tabs">
+  <div class="nft-tab active" id="ntab-market" onclick="nftTab('market')">🛒 MARKET</div>
+  <div class="nft-tab" id="ntab-my" onclick="nftTab('my')">💎 MY NFTS</div>
+</div>
+
+<!-- FILTERS -->
+<div class="filter-row" id="nft-filters">
+  <div class="fp on" onclick="nftFilter('ALL')">ALL</div>
+  <div class="fp" onclick="nftFilter('COMMON')">COMMON</div>
+  <div class="fp" onclick="nftFilter('UNCOMMON')">UNCOMMON</div>
+  <div class="fp" onclick="nftFilter('RARE')">RARE</div>
+  <div class="fp" onclick="nftFilter('EPIC')">EPIC</div>
+  <div class="fp" onclick="nftFilter('LEGENDARY')">LEGENDARY</div>
+  <div class="fp" onclick="nftFilter('MYTHIC')">MYTHIC</div>
+</div>
+
+<!-- CONTENT -->
+<div id="nft-content" style="padding-bottom:30px"></div>
+
+<!-- DETAIL MODAL -->
+<div class="nft-modal" id="nft-modal" onclick="closeNFTModal(event)">
+  <div class="nft-modal-box" id="nft-modal-box">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeNFTModal()">✕</button>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<div id="toast"><span id="toast-msg"></span></div>
+
+<script>
+/* ═══════════════════════════════════════════
+   GLOBALS
+═══════════════════════════════════════════ */
+var G={},db=null,auth=null,rtdb=null,FS=null;
+
+/* ═══════════════════════════════════════════════════════
+   ZENITHCRYPTO SECURITY MODULE v1.0
+   - Input sanitization
+   - Rate limiting
+   - Anti-cheat detection
+   - Player ban checking
+   - Transaction validation
+   - XSS prevention
+═══════════════════════════════════════════════════════ */
+var _SECURITY={
+  ADMIN_UID:'Bj3hFdqE3xhvtWE7gI0a70KQCze2',
+  _rl:{},
+  _violations:0,
+  _maxBalance:1000000,
+  _maxTrade:10000,
+  
+  /* Rate limiter - returns false if rate exceeded */
+  rateLimit:function(key,maxPerMin){
+    var now=Date.now();
+    if(!this._rl[key])this._rl[key]=[];
+    this._rl[key]=this._rl[key].filter(function(t){return now-t<60000;});
+    if(this._rl[key].length>=maxPerMin){
+      _SECURITY.violation('Rate limit exceeded: '+key);
+      return false;
+    }
+    this._rl[key].push(now);
+    return true;
+  },
+  
+  /* Input sanitizer */
+  sanitize:function(str,maxLen){
+    if(typeof str!=='string')return '';
+    return str.replace(/[<>\"'`\\\\]/g,'').replace(/javascript:/gi,'').replace(/on\w+=/gi,'').slice(0,maxLen||200).trim();
+  },
+  
+  /* Number validator */
+  safeNum:function(n,min,max){
+    var v=parseFloat(n);
+    if(isNaN(v)||!isFinite(v))return 0;
+    if(min!==undefined)v=Math.max(min,v);
+    if(max!==undefined)v=Math.min(max,v);
+    return v;
+  },
+  
+  /* Balance anti-cheat */
+  validateBalance:function(amount,type){
+    if(!G.uid||G.isGuest)return true;
+    var bal=parseFloat(G.bal)||0;
+    // Detect impossible balance
+    if(bal>this._maxBalance){
+      this.violation('Impossible balance: $'+bal);
+      return false;
+    }
+    if(amount>this._maxTrade){
+      this.violation('Single trade exceeds max: $'+amount);
+      return false;
+    }
+    if(amount>(bal+0.001)){
+      if(window.toast)toast('Insufficient balance','error');
+      return false;
+    }
+    return true;
+  },
+  
+  /* Log security violation */
+  violation:function(msg){
+    this._violations++;
+    console.warn('[SECURITY] '+msg);
+    if(this._violations>=5){
+      this.banCheck();
+    }
+    if(db&&G.uid){
+      db.collection('securityLogs').add({uid:G.uid,msg:msg,ts:Date.now(),ip:'hidden'}).catch(function(){});
+    }
+  },
+  
+  /* Check if player is banned */
+  checkBan:function(uid){
+    if(!db||!uid)return;
+    db.collection('bans').doc(uid).get().then(function(snap){
+      if(snap.exists){
+        var ban=snap.data();
+        var expired=ban.expiry&&Date.now()>ban.expiry;
+        if(!expired){
+          // Player is banned
+          document.body.innerHTML='<div style="position:fixed;inset:0;background:#04060e;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px;text-align:center">'
+            +'<svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#f6465d" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>'
+            +'<div style="font-family:Orbitron,monospace;font-size:1.2rem;font-weight:900;color:#f6465d">ACCOUNT BANNED</div>'
+            +'<div style="font-family:Orbitron,monospace;font-size:.52rem;color:#6c7a96;line-height:1.7;max-width:320px">'
+            +'Reason: '+(ban.reason||'Violation of terms')+'<br>'
+            +(ban.expiry?'Until: '+new Date(ban.expiry).toLocaleDateString():'PERMANENT')
+            +'</div>'
+            +'<div style="font-family:Orbitron,monospace;font-size:.44rem;color:#2d3a55">Appeal: support@zenithcrypto.app</div>'
+            +'</div>';
+          throw new Error('BANNED');
+        }
+      }
+    }).catch(function(e){if(e.message!=='BANNED')console.log('ban check ok');});
+  },
+  
+  banCheck:function(){this.checkBan(G.uid);},
+  
+  /* Validate trade amount */
+  validateTrade:function(amount,sym){
+    amount=this.safeNum(amount,0.01,this._maxTrade);
+    if(!amount)return 0;
+    if(!this.rateLimit('trade',50)){toast('Too many trades! Slow down.','error');return 0;}
+    if(!this.validateBalance(amount,'trade'))return 0;
+    return amount;
+  },
+  
+  /* Validate send */
+  validateSend:function(amount,toUid){
+    if(!toUid||toUid===G.uid){toast('Invalid recipient','error');return false;}
+    if(!this.rateLimit('send',5)){toast('Too many sends! Wait 1 minute.','error');return false;}
+    if(!this.validateBalance(amount,'send'))return false;
+    return true;
+  },
+  
+  /* Prevent XSS in user content */
+  renderSafe:function(html){
+    return html.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+  },
+  
+  /* Init - called on boot */
+  init:function(uid){
+    if(uid)this.checkBan(uid);
+    // Override esc() to use our sanitizer
+    if(typeof window.esc==='function'){
+      var orig=window.esc;
+      window.esc=function(s){return _SECURITY.renderSafe(String(s||''));};
+    }
+    // Monitor for devtools (basic)
+    var _dt=false;
+    Object.defineProperty(new Error(),'stack',{get:function(){_dt=true;}});
+    // Freeze G balance to prevent console manipulation
+    // (soft protection - serious protection is server-side Firebase rules)
+  }
+};
+
+/* Override save() to validate before writing */
+var _origSave=window.save||function(){};
+window.save=function(data){
+  if(!data||typeof data!=='object')return;
+  // Validate bal if being saved
+  if(data.bal!==undefined){
+    var b=parseFloat(data.bal);
+    if(b>_SECURITY._maxBalance||b<-100||isNaN(b)){
+      _SECURITY.violation('Attempted to save invalid balance: '+b);
+      return;
+    }
+  }
+  if(data.level!==undefined&&(data.level>30||data.level<1)){
+    _SECURITY.violation('Invalid level: '+data.level);
+    delete data.level;
+  }
+  _origSave(data);
+};
+
+/* Admin check */
+function isAdmin(){return G.uid&&G.uid===_SECURITY.ADMIN_UID;}
+(function(){var _x=atob("eyJhcGlLZXkiOiJBSXphU3lDSFJ3cV9EMFdtODNmSTZNcEVwT20tZjlJaXBsZzdUNVEiLCJhdXRoRG9tYWluIjoidGl0YW4tYXBleC1tdWx0aXBsYXllci5maXJlYmFzZWFwcC5jb20iLCJwcm9qZWN0SWQiOiJ0aXRhbi1hcGV4LW11bHRpcGxheWVyIiwic3RvcmFnZUJ1Y2tldCI6InRpdGFuLWFwZXgtbXVsdGlwbGF5ZXIuZmlyZWJhc2VzdG9yYWdlLmFwcCIsIm1lc3NhZ2luZ1NlbmRlcklkIjoiNDEzODUwMDczNDgxIiwiYXBwSWQiOiIxOjQxMzg1MDA3MzQ4MTp3ZWI6ODM0ZGVmNTlmNDA3OTRkMjE4MDk1OCIsImRhdGFiYXNlVVJMIjoiaHR0cHM6Ly90aXRhbi1hcGV4LW11bHRpcGxheWVyLWRlZmF1bHQtcnRkYi5hc2lhLXNvdXRoZWFzdDEuZmlyZWJhc2VkYXRhYmFzZS5hcHAifQ==");try{window._FC=JSON.parse(_x);}catch(e){}})();
+var _nftTab='market',_nftFilter='ALL',_selectedNFT=null;
+
+/* ═══════════════════════════════════════════
+   NFT CATALOG — 12 unique, level-locked NFTs
+   buyable=true means 1-time purchase only
+═══════════════════════════════════════════ */
+window.NFT_CATALOG=[
+  {id:'genesis_spark',   name:'Genesis Spark',   emoji:'⚡',rarity:'COMMON',    price:1.50, lvlReq:1,  bg:'linear-gradient(135deg,#1a2235,#0c1220)',
+   desc:'The first spark of the ZenithCrypto universe. A mark of the early pioneers.',
+   perks:['+2% mining speed','Free spin every Monday','Exclusive COMMON badge'],
+   bonus:{mineSpeed:0.02,freeSpins:1,badge:'⚡'}},
+
+  {id:'neon_leaf',       name:'Neon Leaf',        emoji:'🌿',rarity:'COMMON',    price:2.00, lvlReq:1,  bg:'linear-gradient(135deg,#0a1a12,#0c1220)',
+   desc:'Symbol of growth and sustainability in the digital economy.',
+   perks:['+3% XP from tasks','Green energy miner bonus','COMMON border'],
+   bonus:{xpBonus:0.03,badge:'🌿'}},
+
+  {id:'crystal_eye',     name:'Crystal Eye',      emoji:'🔮',rarity:'UNCOMMON',  price:5.00, lvlReq:3,  bg:'linear-gradient(135deg,#12102a,#0c1220)',
+   desc:'See the future of markets. Grants market insight abilities.',
+   perks:['+5% trading payout','Market trend indicator','UNCOMMON frame'],
+   bonus:{tradeBonus:0.05,badge:'🔮'}},
+
+  {id:'silver_falcon',   name:'Silver Falcon',    emoji:'🦅',rarity:'UNCOMMON',  price:7.50, lvlReq:4,  bg:'linear-gradient(135deg,#1a1a2a,#0c1220)',
+   desc:'Swift and precise. Represents speed in the markets.',
+   perks:['+5% ZENZ rewards','Faster trade resolution','Silver border glow'],
+   bonus:{zenzBonus:0.05,badge:'🦅'}},
+
+  {id:'plasma_heart',    name:'Plasma Heart',     emoji:'💜',rarity:'RARE',      price:15.0, lvlReq:6,  bg:'linear-gradient(135deg,#1a0a2e,#0c1220)',
+   desc:'Pulsating with pure energy. The heart of the DeFi revolution.',
+   perks:['+8% mining rate','2x daily spin chance','Rare animated frame'],
+   bonus:{mineSpeed:0.08,spinBonus:2,badge:'💜'}},
+
+  {id:'golden_dragon',   name:'Golden Dragon',    emoji:'🐉',rarity:'RARE',      price:20.0, lvlReq:7,  bg:'linear-gradient(135deg,#2a1a00,#0c1220)',
+   desc:'Ancient power meets modern blockchain. A legendary creature of wealth.',
+   perks:['+10% all income','Dragon badge profile','RARE tier access'],
+   bonus:{incomeBonus:0.10,badge:'🐉'}},
+
+  {id:'nebula_core',     name:'Nebula Core',      emoji:'🌌',rarity:'EPIC',      price:35.0, lvlReq:10, bg:'linear-gradient(135deg,#0a102a,#12051a)',
+   desc:'Born from stellar collapse. Contains the computational power of a galaxy.',
+   perks:['+15% mining speed','NFT staking rewards','Epic glow animation'],
+   bonus:{mineSpeed:0.15,staking:true,badge:'🌌'}},
+
+  {id:'quantum_blade',   name:'Quantum Blade',    emoji:'⚔️',rarity:'EPIC',      price:50.0, lvlReq:12, bg:'linear-gradient(135deg,#0a1a2a,#050810)',
+   desc:'Cuts through volatility. The weapon of choice for elite traders.',
+   perks:['+15% trade payout','-10% forge fees','Epic animated border'],
+   bonus:{tradeBonus:0.15,forgeDiscount:0.10,badge:'⚔️'}},
+
+  {id:'solar_crown',     name:'Solar Crown',      emoji:'👑',rarity:'LEGENDARY', price:100., lvlReq:15, bg:'linear-gradient(135deg,#2a1a00,#1a0a00)',
+   desc:'Worn by the kings of ZenithCrypto. Absolute market dominance.',
+   perks:['+20% all rewards','Crown profile frame','VIP queue priority','Legendary shimmer'],
+   bonus:{allBonus:0.20,vipQueue:true,badge:'👑'}},
+
+  {id:'void_titan',      name:'Void Titan',       emoji:'🌑',rarity:'LEGENDARY', price:150., lvlReq:18, bg:'linear-gradient(135deg,#050508,#0a0510)',
+   desc:'Emerged from the void between blockchains. Unstoppable force.',
+   perks:['+25% mining speed','+20% trade payout','Void particle effects','Titan badge'],
+   bonus:{mineSpeed:0.25,tradeBonus:0.20,badge:'🌑'}},
+
+  {id:'zenith_phoenix',  name:'Zenith Phoenix',   emoji:'🔥',rarity:'MYTHIC',    price:300., lvlReq:20, bg:'linear-gradient(135deg,#2a0a00,#1a050a)',
+   desc:'Rises from market crashes stronger. The rarest NFT in ZenithCrypto history.',
+   perks:['+30% ALL rewards','Phoenix animated art','Exclusive Phoenix chat role','Mythic auction access','+5 daily free spins'],
+   bonus:{allBonus:0.30,freeSpins:5,badge:'🔥',chatRole:true}},
+
+  {id:'omega_genesis',   name:'Omega Genesis',    emoji:'♾️',rarity:'MYTHIC',    price:500., lvlReq:25, bg:'linear-gradient(135deg,#0a0a2a,#050515)',
+   desc:'The final form. Infinite potential, infinite rewards. Only for the truly elite.',
+   perks:['+40% ALL rewards','Omega animated frame','1% platform revenue share','Lifetime VIP gold','Exclusive Omega events'],
+   bonus:{allBonus:0.40,revenueShare:true,lifetimeVIP:true,badge:'♾️'}},
+];
+
+var RARITY_COLORS={COMMON:'#6c7a96',UNCOMMON:'#00e676',RARE:'#00d4ff',EPIC:'#c471f5',LEGENDARY:'#f0b90b',MYTHIC:'#ff4757'};
+var RARITY_BG={COMMON:'rgba(108,122,150,.15)',UNCOMMON:'rgba(0,230,118,.15)',RARE:'rgba(0,212,255,.15)',EPIC:'rgba(196,113,245,.15)',LEGENDARY:'rgba(240,185,11,.15)',MYTHIC:'rgba(255,71,87,.2)'};
+
+/* ZCS */
+var ZCS={
+  pages:{'home':'HOME_URL','market':atob('aHR0cHM6Ly9jcnlwdG9ib3NzNzY4LWNyZWF0ZS5naXRodWIuaW8vQ2poem1hcmtldC5naXRodWIuaW8v'),'trade':atob('aHR0cHM6Ly9jcnlwdG9ib3NzNzY4LWNyZWF0ZS5naXRodWIuaW8vSXdpd3RyYWQ4MjI4LmdpdGh1Yi5pby8='),'nft':atob('aHR0cHM6Ly9vbHdpbjEzMzQtYml0LmdpdGh1Yi5pby9HdWpjck5mdC5naXRodWIuaW8v')},
+  go:function(pg){var url=ZCS.pages[pg];if(!url||url.indexOf('_URL')>-1)return;try{sessionStorage.setItem('_zc_uid',G.uid||'');}catch(e){}window.location.href=url+(G.uid?'?uid='+G.uid:'');},
+  restore:function(){try{var p=new URLSearchParams(window.location.search);var uid=p.get('uid');if(uid){G.uid=uid;sessionStorage.setItem('_zc_uid',uid);return;}var cu=sessionStorage.getItem('_zc_uid');if(cu)G.uid=cu;}catch(e){}}
+};
+window.goPage=function(pg){ZCS.go(pg);};
+
+function gid(id){return document.getElementById(id);}
+function toast(msg,type){var t=gid('toast'),m=gid('toast-msg');if(!t)return;if(m)m.textContent=msg;t.style.borderLeftColor=type==='error'?'#f6465d':type==='success'?'#0ecb81':'#7c5df7';t.style.display='flex';clearTimeout(t._t);t._t=setTimeout(function(){t.style.display='none';},3200);}
+function save(data){
+  if(!G.uid||!db)return;
+  if(!window._sq)window._sq={};Object.assign(window._sq,data);
+  clearTimeout(window._st);
+  window._st=setTimeout(function(){if(!window._sq||!db)return;var d=window._sq;window._sq={};db.collection('players').doc(G.uid).update(d).catch(function(){});},1500);
+}
+function updateHdr(){
+  var b=parseFloat(G.bal)||0;
+  // Add NFT portfolio value
+  var nftVal=0;(G.ownedNFTs||[]).forEach(function(id){var n=NFT_CATALOG.find(function(x){return x.id===id;});if(n)nftVal+=n.price;});
+  var total=b+nftVal+(G.zenz||0)*0.03;
+  if(gid('hbal'))gid('hbal').textContent='$'+total.toFixed(2);
+  if(gid('hlv'))gid('hlv').textContent='LV'+(G.level||1);
+  var lv=G.level||1;var xp=G.xp||0;
+  var XP_TABLE={1:0,2:50,3:120,4:220,5:360,6:550,7:800,8:1100,9:1500,10:2000,11:2700,12:3500,13:4500,14:5700,15:7200,16:9000,17:11200,18:13800,19:16800,20:20300,25:47800,30:100000};
+  var x0=XP_TABLE[lv]||0,x1=XP_TABLE[lv+1]||x0+1000;
+  if(gid('xpf'))gid('xpf').style.width=Math.min(100,Math.max(0,((xp-x0)/(x1-x0))*100))+'%';
+}
+function updatePageStats(){
+  var owned=(G.ownedNFTs||[]);
+  var nftVal=0;owned.forEach(function(id){var n=NFT_CATALOG.find(function(x){return x.id===id;});if(n)nftVal+=n.price;});
+  if(gid('ph-owned'))gid('ph-owned').textContent=owned.length;
+  if(gid('ph-value'))gid('ph-value').textContent='$'+nftVal.toFixed(0);
+  if(gid('ph-lv'))gid('ph-lv').textContent='LV'+(G.level||1);
+}
+
+/* TABS & FILTERS */
+function nftTab(t){
+  _nftTab=t;
+  ['market','my'].forEach(function(x){var tab=gid('ntab-'+x);if(tab)tab.classList.toggle('active',x===t);});
+  gid('nft-filters').style.display=t==='market'?'flex':'none';
+  if(t==='market')renderMarket();else renderMyNFTs();
+}
+window.nftTab=nftTab;
+function nftFilter(f){
+  _nftFilter=f;
+  document.querySelectorAll('.fp').forEach(function(el){el.classList.toggle('on',el.textContent===f);});
+  renderMarket();
+}
+
+/* RENDER MARKET */
+function renderMarket(){
+  var el=gid('nft-content');if(!el)return;
+  var lv=G.level||1;
+  var owned=G.ownedNFTs||[];
+  var list=NFT_CATALOG.filter(function(n){return _nftFilter==='ALL'||n.rarity===_nftFilter;});
+  if(!list.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--t3);font-family:var(--fhd);font-size:.52rem">No NFTs in this category</div>';return;}
+  el.innerHTML='<div class="nft-grid">'+list.map(function(n,i){
+    var isOwned=owned.includes(n.id);
+    var isLocked=lv<n.lvlReq;
+    var col=RARITY_COLORS[n.rarity]||'#888';
+    var rbg=RARITY_BG[n.rarity]||'rgba(108,122,150,.1)';
+    var artBg=n.bg||'var(--s2)';
+    return '<div class="nft-card '+n.rarity.toLowerCase()+' '+(isOwned?'owned':'')+(isLocked?' locked':'')+'" onclick="openNFTModal(\''+n.id+'\')" style="animation-delay:'+(i*0.05)+'s">'
+      +'<div class="nft-art" style="background:'+artBg+'">'
+        +'<span class="nft-emoji">'+n.emoji+'</span>'
+        +'<div class="rarity-label" style="background:'+rbg+';color:'+col+';border:1px solid '+col+'40">'+n.rarity+'</div>'
+        +(isLocked&&!isOwned?'<div class="lock-overlay"><div class="lock-ico">🔒</div><div class="lock-lbl">LVL '+n.lvlReq+' REQUIRED</div></div>':'')
+        +(isOwned?'<div style="position:absolute;bottom:8px;left:8px;font-family:var(--fhd);font-size:.34rem;background:rgba(124,93,247,.8);color:#fff;padding:2px 7px;border-radius:10px;z-index:3">OWNED ✓</div>':'')
+      +'</div>'
+      +'<div class="nft-info">'
+        +'<div class="nft-name">'+n.name+'</div>'
+        +'<div class="nft-rarity" style="color:'+col+'">'+n.rarity+'</div>'
+        +'<div class="nft-price-row"><div class="nft-price">$'+n.price.toFixed(2)+'</div>'+(isOwned?'<div class="nft-owned-badge">OWNED</div>':'')+'</div>'
+        +'<div class="nft-bonus">'+n.perks[0]+'</div>'
+        +'<button class="nft-buy-btn '+(isOwned?'owned':isLocked?'locked-btn':(parseFloat(G.bal)>=n.price?'can':'cant'))+'" onclick="event.stopPropagation();'+(isOwned?'toast(\'Already owned!\',\'info\')':isLocked?'toast(\'Reach LV'+n.lvlReq+' to unlock!\',\'error\')':'buyNFT(\''+n.id+'\')'+'')+'">'
+          +(isOwned?'OWNED ✓':isLocked?'🔒 UNLOCK AT LV'+n.lvlReq:'BUY $'+n.price.toFixed(2))
+        +'</button>'
+      +'</div>'
+    +'</div>';
+  }).join('')+'</div>';
+}
+
+/* RENDER MY NFTS */
+function renderMyNFTs(){
+  var el=gid('nft-content');if(!el)return;
+  var owned=G.ownedNFTs||[];
+  if(!owned.length){
+    el.innerHTML='<div class="my-nft-empty"><div class="my-nft-empty-icon">🖼️</div><div style="font-family:var(--fhd);font-size:.6rem;color:var(--t2);margin-bottom:6px">No NFTs Yet</div><div style="font-size:.58rem;color:var(--t3);line-height:1.6">Browse the market and buy your first NFT to unlock exclusive perks!</div><button onclick="nftTab(\'market\')" style="margin-top:16px;padding:10px 24px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--purple),var(--a));color:#fff;font-family:var(--fhd);font-size:.52rem;cursor:pointer">BROWSE MARKET →</button></div>';
+    return;
+  }
+  var ownedNFTs=NFT_CATALOG.filter(function(n){return owned.includes(n.id);});
+  el.innerHTML='<div style="padding:12px 14px;font-family:var(--fhd);font-size:.5rem;color:var(--t2);background:var(--s1);border-bottom:1px solid rgba(255,255,255,.04)">YOUR NFT COLLECTION · '+owned.length+' ITEMS</div>'
+    +'<div class="nft-grid">'+ownedNFTs.map(function(n,i){
+    var col=RARITY_COLORS[n.rarity]||'#888';
+    return '<div class="nft-card '+n.rarity.toLowerCase()+' owned" onclick="openNFTModal(\''+n.id+'\')" style="animation-delay:'+(i*0.05)+'s">'
+      +'<div class="nft-art" style="background:'+n.bg+'"><span class="nft-emoji">'+n.emoji+'</span><div class="rarity-label" style="background:'+RARITY_BG[n.rarity]+';color:'+col+'">'+n.rarity+'</div></div>'
+      +'<div class="nft-info">'
+        +'<div class="nft-name">'+n.name+'</div>'
+        +'<div class="nft-rarity" style="color:'+col+'">'+n.rarity+'</div>'
+        +'<div class="nft-price-row"><div class="nft-price">$'+n.price.toFixed(2)+'</div><div class="nft-owned-badge">OWNED ✓</div></div>'
+        +'<div class="nft-bonus">'+n.perks.slice(0,2).join(' · ')+'</div>'
+      +'</div>'
+    +'</div>';
+  }).join('')+'</div>';
+}
+
+/* OPEN MODAL */
+function openNFTModal(id){
+  var n=NFT_CATALOG.find(function(x){return x.id===id;});if(!n)return;
+  _selectedNFT=n;
+  var lv=G.level||1;
+  var owned=(G.ownedNFTs||[]).includes(id);
+  var isLocked=lv<n.lvlReq;
+  var col=RARITY_COLORS[n.rarity]||'#888';
+  var canBuy=!owned&&!isLocked&&(parseFloat(G.bal)||0)>=n.price;
+  var mc=gid('modal-content');if(!mc)return;
+  mc.innerHTML='<div class="modal-art" style="background:'+n.bg+'">'+n.emoji+'</div>'
+    +'<div class="modal-title">'+n.name+'</div>'
+    +'<div class="modal-rarity" style="color:'+col+'">'+n.rarity+' · REQ LV'+n.lvlReq+' · $'+n.price.toFixed(2)+'</div>'
+    +'<div class="modal-desc">'+n.desc+'</div>'
+    +'<div class="modal-perks">'
+      +'<div class="modal-perk-title">PERKS & BONUSES</div>'
+      +n.perks.map(function(p){return '<div class="perk-item"><span class="perk-icon">✦</span><span style="color:var(--t1)">'+p+'</span></div>';}).join('')
+    +'</div>'
+    +'<div class="modal-stats">'
+      +'<div class="modal-stat"><div class="modal-stat-l">PRICE</div><div class="modal-stat-v" style="color:var(--gold)">$'+n.price.toFixed(2)+'</div></div>'
+      +'<div class="modal-stat"><div class="modal-stat-l">RARITY</div><div class="modal-stat-v" style="color:'+col+'">'+n.rarity+'</div></div>'
+      +'<div class="modal-stat"><div class="modal-stat-l">MIN LEVEL</div><div class="modal-stat-v" style="color:var(--a)">LV'+n.lvlReq+'</div></div>'
+      +'<div class="modal-stat"><div class="modal-stat-l">SUPPLY</div><div class="modal-stat-v" style="color:var(--purple)">1 OF 1</div></div>'
+    +'</div>'
+    +'<button class="modal-buy-btn" style="background:'+(owned?'rgba(14,203,129,.15)':isLocked?'rgba(255,255,255,.06)':canBuy?'linear-gradient(135deg,'+col+',#7c5df7)':'rgba(255,255,255,.06)')+';color:'+(owned?'#0ecb81':isLocked||!canBuy?'#2d3a55':'#fff')+';" onclick="'+(owned?'toast(\'You already own this NFT!\',\'info\')':isLocked?'toast(\'Reach LV'+n.lvlReq+' to unlock!\',\'error\')':'buyNFT(\''+n.id+'\')')+'">'
+      +(owned?'✓ OWNED':isLocked?'🔒 REACH LV'+n.lvlReq+' TO UNLOCK':canBuy?'BUY NOW — $'+n.price.toFixed(2):'INSUFFICIENT BALANCE')
+    +'</button>';
+  var modal=gid('nft-modal');if(modal)modal.classList.add('open');
+}
+function closeNFTModal(e){
+  if(e&&e.target!==gid('nft-modal'))return;
+  var modal=gid('nft-modal');if(modal)modal.classList.remove('open');
+}
+
+/* BUY NFT */
+function buyNFT(id){
+  if(!G.uid){toast('Please log in first','error');return;}
+  var n=NFT_CATALOG.find(function(x){return x.id===id;});if(!n)return;
+  var owned=G.ownedNFTs||[];
+  if(owned.includes(id)){toast('You already own this NFT!','error');return;}
+  var lv=G.level||1;
+  if(lv<n.lvlReq){toast('Reach LV'+n.lvlReq+' to unlock!','error');return;}
+  var bal=parseFloat(G.bal)||0;
+  if(bal<n.price){toast('Need $'+n.price.toFixed(2)+'. You have $'+bal.toFixed(2),'error');return;}
+  G.bal=bal-n.price;
+  G.ownedNFTs=owned.concat([id]);
+  // Apply perks
+  if(n.bonus.badge)G.nftBadge=n.bonus.badge;
+  if(n.bonus.mineSpeed)G.nftMineBonus=(G.nftMineBonus||0)+n.bonus.mineSpeed;
+  if(n.bonus.allBonus)G.nftAllBonus=(G.nftAllBonus||0)+n.bonus.allBonus;
+  if(n.bonus.tradeBonus)G.nftTradeBonus=(G.nftTradeBonus||0)+n.bonus.tradeBonus;
+  if(n.bonus.freeSpins)G.spins=(G.spins||0)+n.bonus.freeSpins;
+  save({bal:G.bal,ownedNFTs:G.ownedNFTs,nftBadge:G.nftBadge||'',nftMineBonus:G.nftMineBonus||0,nftAllBonus:G.nftAllBonus||0,nftTradeBonus:G.nftTradeBonus||0,spins:G.spins||0});
+  // Log to Firebase
+  if(db)db.collection('nft_purchases').add({uid:G.uid,nftId:id,price:n.price,rarity:n.rarity,ts:FS?FS.FieldValue.serverTimestamp():new Date()}).catch(function(){});
+  toast('🎉 '+n.name+' purchased! Perks activated.','success');
+  updateHdr();updatePageStats();
+  gid('nft-modal').classList.remove('open');
+  if(_nftTab==='market')renderMarket();else renderMyNFTs();
+}
+
+/* PRICES */
+function startPrices(){
+  function f2(){fetch('https://api.binance.com/api/v3/ticker/price?symbols=["BTCUSDT","ETHUSDT","SOLUSDT","BNBUSDT"]').then(function(r){return r.json();}).then(function(d){d.forEach(function(i){var s=i.symbol.replace('USDT','');var el=gid('tk-'+s);if(el)el.textContent='$'+parseFloat(i.price).toLocaleString(undefined,{maximumFractionDigits:2});});}).catch(function(){});}
+  f2();if(!window._lpInt)window._lpInt=setInterval(f2,7000);
+}
+
+/* BOOT */
+function _initFB(){
+  if(typeof firebase==='undefined'){if(!window._fbTry)window._fbTry=0;window._fbTry++;if(window._fbTry>50){boot();return;}setTimeout(_initFB,20);return;}
+  try{
+    if(!firebase.apps.length)firebase.initializeApp(window._FC||{});
+    db=firebase.firestore();auth=firebase.auth();rtdb=firebase.database();FS=firebase.firestore;
+    ZCS.restore();
+    var _done=false;
+    auth.onAuthStateChanged(function(user){
+      if(_done)return;_done=true;
+      if(user){G.uid=user.uid;db.collection('players').doc(user.uid).get().then(function(snap){if(snap.exists)Object.assign(G,snap.data());boot();}).catch(function(e){window._showOffline&&window._showOffline("Could not reach server.");});}
+      else{if(G.uid){db.collection('players').doc(G.uid).get().then(function(snap){if(snap.exists)Object.assign(G,snap.data());boot();}).catch(function(e){window._showOffline&&window._showOffline("Could not reach server.");});}else boot();}
+    });
+    setTimeout(function(){if(!_done){_done=true;boot();}},6000);
+  }catch(e){setTimeout(_initFB,100);}
+}
+function boot(){
+  try{_SECURITY.init(G.uid);}catch(e){}
+  updateHdr();updatePageStats();startPrices();
+  renderMarket();
+}
+_initFB();
+
+
+/* ═══════════════ SECURITY MODULE ═══════════════ */
+var _SEC={
+  MAX_BALANCE:999999,
+  MAX_LEVEL:30,
+  MAX_XP:200000,
+  RATE_LIMITS:{},
+  
+  // Rate limiting
+  rateLimit:function(key,maxPerMin){
+    var now=Date.now();
+    if(!_SEC.RATE_LIMITS[key])_SEC.RATE_LIMITS[key]=[];
+    _SEC.RATE_LIMITS[key]=_SEC.RATE_LIMITS[key].filter(function(t){return now-t<60000;});
+    if(_SEC.RATE_LIMITS[key].length>=maxPerMin)return false;
+    _SEC.RATE_LIMITS[key].push(now);return true;
+  },
+  
+  // Validate number fields
+  sanitizeNum:function(n,min,max){n=parseFloat(n)||0;return Math.max(min||0,Math.min(max||_SEC.MAX_BALANCE,n));},
+  
+  // Sanitize string input
+  sanitizeStr:function(s,maxLen){return String(s||'').replace(/[<>"'`]/g,'').slice(0,maxLen||200).trim();},
+  
+  // Validate trade amount
+  validateTrade:function(amt,bal){
+    if(!_SEC.rateLimit('trade',300))return 'Rate limit: max 300 trades/min';
+    if(isNaN(amt)||amt<=0)return 'Invalid amount';
+    if(amt>bal)return 'Insufficient balance';
+    if(amt>10000)return 'Max trade: $10,000 per transaction';
+    return null;
+  },
+  
+  // Check if UID is banned
+  checkBan:function(uid,cb){
+    if(!db||!uid)return;
+    db.collection('players').doc(uid).get().then(function(snap){
+      if(snap.exists&&snap.data().banned){
+        var reason=snap.data().banReason||'Policy violation';
+        document.body.innerHTML='<div style="position:fixed;inset:0;background:#04060e;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px;text-align:center"><svg width="60" height="60" viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="45" stroke="#f6465d" stroke-width="4"/><line x1="25" y1="25" x2="75" y2="75" stroke="#f6465d" stroke-width="4"/><line x1="75" y1="25" x2="25" y2="75" stroke="#f6465d" stroke-width="4"/></svg><div style="font-family:Orbitron,monospace;font-size:1rem;font-weight:900;color:#f6465d">ACCOUNT BANNED</div><div style="font-family:Orbitron,monospace;font-size:.54rem;color:#6c7a96;max-width:300px;line-height:1.7">Reason: '+esc(reason||'Unknown')+'<br>Contact support if you believe this is an error.</div></div>';
+        if(typeof auth!=="undefined"&&auth)auth.signOut().catch(function(){});
+      } else if(cb) cb();
+    }).catch(function(){if(cb)cb();});
+  },
+  
+  // Admin ban function
+  banPlayer:function(uid,reason){
+    if(!isAdmin()||!db)return;
+    db.collection('players').doc(uid).update({banned:true,banReason:reason||'Policy violation',bannedAt:FS?FS.FieldValue.serverTimestamp():new Date()}).then(function(){toast('Player banned','success');}).catch(function(e){toast('Error: '+e.message,'error');});
+  },
+  
+  // Validate UID format
+  validUID:function(uid){return typeof uid==='string'&&uid.length>10&&uid.length<128;},
+  
+  // Anti-cheat: verify balance hasn't been tampered
+  verifyBalance:function(){
+    if(!G.uid||!db)return;
+    db.collection('players').doc(G.uid).get().then(function(snap){
+      if(!snap.exists)return;
+      var serverBal=snap.data().bal||0;
+      var localBal=G.bal||0;
+      // If local is MORE than server by >100, suspect tampering
+      if(localBal-serverBal>100){
+        console.warn('Balance mismatch detected');
+        G.bal=serverBal;
+        if(typeof updateHdr==='function')updateHdr();
+      }
+    }).catch(function(){});
+  }
+};
+
+// Run ban check after login
+function runSecurityChecks(){
+  if(G.uid&&!G.isGuest){
+    _SEC.checkBan(G.uid, function(){
+      // Only runs if not banned
+      setTimeout(function(){_SEC.verifyBalance();},5000);
+    });
+  }
+}
+
+
+/* OFFLINE GUARD */
+(function(){var _ot=null;window._showOffline=function(m){if(document.getElementById('_zco'))return;var d=document.createElement('div');d.id='_zco';d.style.cssText='position:fixed;inset:0;z-index:99999;background:#04060e;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:30px;text-align:center;font-family:Orbitron,monospace';d.innerHTML='<div style="font-size:3rem">&#128225;</div><div style="font-size:.9rem;font-weight:900;color:#eaecf0;letter-spacing:2px">CONNECTION LOST</div><div style="font-size:.5rem;color:#6c7a96;line-height:2;max-width:260px">'+(m||'No internet')+'<br><span id="_zco_cd">Retrying in 5s...</span></div><button onclick="window._retryNow&&window._retryNow()" style="padding:11px 26px;border-radius:10px;border:1.5px solid rgba(79,142,247,.4);background:rgba(79,142,247,.1);color:#4f8ef7;font-size:.52rem;cursor:pointer;font-weight:700;font-family:Orbitron,monospace">RETRY NOW</button>';document.body.appendChild(d);var c=5;_ot=setInterval(function(){c--;var r=document.getElementById('_zco_cd');if(r)r.textContent=c>0?'Retrying in '+c+'s...':'Retrying...';if(c<=0){clearInterval(_ot);window._retryNow&&window._retryNow();}},1000);};window._hideOffline=function(){var d=document.getElementById('_zco');if(d)d.remove();if(_ot)clearInterval(_ot);};window.addEventListener('online',function(){window._hideOffline();});window.addEventListener('offline',function(){window._showOffline('Internet lost.');});window.addEventListener('error',function(e){e.preventDefault();return true;},true);window.addEventListener('unhandledrejection',function(e){e.preventDefault();});})();
+</script>
+</body>
+</html>
